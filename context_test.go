@@ -1061,6 +1061,7 @@ func TestContextRenderIfErr(t *testing.T) {
 func TestContextRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
@@ -1101,6 +1102,7 @@ func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 func TestContextRenderNoContentJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.JSON(http.StatusNoContent, H{"foo": "bar"})
 
@@ -1114,6 +1116,7 @@ func TestContextRenderNoContentJSON(t *testing.T) {
 func TestContextRenderAPIJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.Header("Content-Type", "application/vnd.api+json")
 	c.JSON(http.StatusCreated, H{"foo": "bar"})
@@ -1127,6 +1130,7 @@ func TestContextRenderAPIJSON(t *testing.T) {
 func TestContextRenderNoContentAPIJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.Header("Content-Type", "application/vnd.api+json")
 	c.JSON(http.StatusNoContent, H{"foo": "bar"})
@@ -1141,6 +1145,7 @@ func TestContextRenderNoContentAPIJSON(t *testing.T) {
 func TestContextRenderIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.IndentedJSON(http.StatusCreated, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
@@ -1153,6 +1158,7 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.IndentedJSON(http.StatusNoContent, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
@@ -1197,6 +1203,7 @@ func TestContextClientIPWithSingleHeader(t *testing.T) {
 func TestContextRenderSecureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, router := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	router.SecureJsonPrefix("&&&START&&&")
 	c.SecureJSON(http.StatusCreated, []string{"foo", "bar"})
@@ -1210,6 +1217,7 @@ func TestContextRenderSecureJSON(t *testing.T) {
 func TestContextRenderNoContentSecureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.SecureJSON(http.StatusNoContent, []string{"foo", "bar"})
 
@@ -1221,6 +1229,7 @@ func TestContextRenderNoContentSecureJSON(t *testing.T) {
 func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.AsciiJSON(http.StatusNoContent, []string{"lang", "Go语言"})
 
@@ -1235,6 +1244,7 @@ func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 func TestContextRenderPureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 	c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.JSONEq(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
@@ -1300,6 +1310,7 @@ func TestContextRenderNoContentHTML(t *testing.T) {
 func TestContextRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.XML(http.StatusCreated, H{"foo": "bar"})
 
@@ -1312,6 +1323,7 @@ func TestContextRenderXML(t *testing.T) {
 func TestContextRenderNoContentXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.XML(http.StatusNoContent, H{"foo": "bar"})
 
@@ -1515,6 +1527,7 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 func TestContextRenderYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.YAML(http.StatusCreated, H{"foo": "bar"})
 
@@ -1528,6 +1541,7 @@ func TestContextRenderYAML(t *testing.T) {
 func TestContextRenderTOML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	c.TOML(http.StatusCreated, H{"foo": "bar"})
 
@@ -1542,6 +1556,7 @@ func TestContextRenderTOML(t *testing.T) {
 func TestContextRenderProtoBuf(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 
 	reps := []int64{int64(1), int64(2)}
 	label := "test"
@@ -1862,6 +1877,7 @@ type testJSONAbortMsg struct {
 func TestContextAbortWithStatusJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 	c.index = 4
 
 	in := new(testJSONAbortMsg)
@@ -1888,6 +1904,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 func TestContextAbortWithStatusPureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 	c.index = 4
 
 	in := new(testJSONAbortMsg)

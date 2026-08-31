@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,6 +62,44 @@ func testRequest(t *testing.T, params ...string) {
 	if responseStatus == "200 OK" {
 		assert.Equal(t, responseBody, string(body), "resp body should match")
 	}
+}
+
+func waitForQUICServerReady(url string, maxAttempts int) error {
+	transport := &http3.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	defer transport.Close()
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   500 * time.Millisecond,
+	}
+	var lastErr error
+	for i := 0; i < maxAttempts; i++ {
+		resp, err := client.Get(url)
+		if err == nil {
+			body, readErr := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			switch {
+			case readErr != nil:
+				lastErr = readErr
+			case resp.StatusCode != http.StatusOK:
+				lastErr = fmt.Errorf("unexpected response status: %s", resp.Status)
+			case string(body) != "it worked":
+				lastErr = fmt.Errorf("unexpected response body: %q", body)
+			default:
+				return nil
+			}
+		} else {
+			lastErr = err
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	return fmt.Errorf("QUIC server at %s did not become ready after %d attempts: %w", url, maxAttempts, lastErr)
 }
 
 func TestRunEmpty(t *testing.T) {
@@ -287,12 +326,18 @@ func TestRunQUIC(t *testing.T) {
 		assert.NoError(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 	}()
 
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+	err := waitForQUICServerReady("https://localhost:8443/example", 100)
+	require.NoError(t, err, "QUIC server should start successfully")
 
 	require.Error(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
-	testRequest(t, "https://localhost:8443/example")
+
+	// RunQUIC serves HTTP/3 over UDP and must not accept a TCP connection.
+	tcpClient := &http.Client{Timeout: 500 * time.Millisecond}
+	resp, err := tcpClient.Get("https://localhost:8443/example")
+	if resp != nil {
+		resp.Body.Close()
+	}
+	require.Error(t, err)
 }
 
 func TestFileDescriptor(t *testing.T) {

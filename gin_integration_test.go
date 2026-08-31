@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,16 +30,18 @@ import (
 // params[1]=response status (custom compare status) default:"200 OK"
 // params[2]=response body (custom compare content)  default:"it worked"
 func testRequest(t *testing.T, params ...string) {
-	if len(params) == 0 {
-		t.Fatal("url cannot be empty")
-	}
-
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
 	}
-	client := &http.Client{Transport: tr}
+	testRequestWithClient(t, &http.Client{Transport: tr}, params...)
+}
+
+func testRequestWithClient(t *testing.T, client *http.Client, params ...string) {
+	if len(params) == 0 {
+		t.Fatal("url cannot be empty")
+	}
 
 	resp, err := client.Get(params[0])
 	require.NoError(t, err)
@@ -280,19 +283,35 @@ func TestBadUnixSocket(t *testing.T) {
 }
 
 func TestRunQUIC(t *testing.T) {
+	listener, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	require.NoError(t, err)
+	addr := listener.LocalAddr().String()
+	require.NoError(t, listener.Close())
+
 	router := New()
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 
-		assert.NoError(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+		assert.NoError(t, router.RunQUIC(addr, "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 	}()
 
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+	transport := &http3.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	t.Cleanup(func() { require.NoError(t, transport.Close()) })
+	client := &http.Client{Transport: transport, Timeout: time.Second}
+	url := "https://" + addr + "/example"
 
-	require.Error(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
-	testRequest(t, "https://localhost:8443/example")
+	require.Eventually(t, func() bool {
+		resp, requestErr := client.Get(url)
+		if requestErr != nil {
+			return false
+		}
+		return resp.Body.Close() == nil
+	}, 5*time.Second, 10*time.Millisecond, "QUIC server should start successfully")
+
+	require.Error(t, router.RunQUIC(addr, "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	testRequestWithClient(t, client, url)
 }
 
 func TestFileDescriptor(t *testing.T) {
